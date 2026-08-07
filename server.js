@@ -40,7 +40,7 @@ app.get("/stream", (req, res) => {
   const id = req.query.id;
   if (!id) return res.status(400).json({ error: "Falta el id" });
 
-  const cmd = `yt-dlp -f 140 -g "https://youtube.com{id}" --no-warnings --quiet`;
+  const cmd = `yt-dlp -f 140 -g "https://youtube.com{id}" --no-warnings --quiet --impersonate chrome`;
 
   exec(cmd, (err, stdout) => {
     if (err) {
