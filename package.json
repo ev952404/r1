@@ -9,6 +9,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "youtube-sr": "^4.3.11"
+    "youtube-sr": "^4.3.11",
+    "@distube/ytdl-core": "^4.15.1"
   }
 }
