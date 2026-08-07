@@ -12,7 +12,8 @@ app.get("/search", (req, res) => {
   const q = req.query.q;
   if (!q) return res.status(400).json({ error: "Falta la búsqueda" });
 
-  const cmd = `yt-dlp "ytsearch10:${q}" --print "%(id)s|||%(title)s|||%(channel)s|||%(duration_string)s|||%(thumbnail)s" --no-warnings --quiet`;
+    const cmd = `yt-dlp "ytsearch10:${q}" --print "%(id)s|||%(title)s|||%(channel)s|||%(duration_string)s|||%(thumbnail)s" --no-warnings --quiet --impersonate chrome`;
+
 
   exec(cmd, { maxBuffer: 1024 * 1024 * 5 }, (err, stdout, stderr) => {
     if (err) {
