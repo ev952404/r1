@@ -20,10 +20,10 @@ app.get("/search", (req, res) => {
       return res.status(500).json({ error: "Error al buscar" });
     }
 
+    // Dividimos por saltos de línea de forma segura usando expresión regular
     const results = stdout
       .trim()
-      .split("
-")
+      .split(/\r?\n/)
       .filter(Boolean)
       .map(line => {
         const [id, title, channel, duration, thumbnail] = line.split("|||");
@@ -34,12 +34,11 @@ app.get("/search", (req, res) => {
   });
 });
 
-// Obtener URL temporal de audio directo para HTML5 (SIN FFMEG)
+// Obtener URL temporal de audio directo para HTML5
 app.get("/stream", (req, res) => {
   const id = req.query.id;
   if (!id) return res.status(400).json({ error: "Falta el id" });
 
-  // Exigimos el formato m4a nativo (f 140) que HTML5 reproduce directamente sin ayuda
   const cmd = `yt-dlp -f 140 -g "https://youtube.com{id}" --no-warnings --quiet`;
 
   exec(cmd, (err, stdout) => {
@@ -53,6 +52,6 @@ app.get("/stream", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`
- Servidor corriendo en el puerto: ${PORT}`);
+  console.log(`Servidor activo en puerto ${PORT}`);
 });
+
