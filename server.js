@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.static(__dirname)); // Sirve el index.html
 
-// Buscar 10 resultados usando youtube-sr
+// Buscar 10 resultados usando youtube-sr (Evita bloqueos de búsqueda)
 app.get("/search", async (req, res) => {
   const q = req.query.q;
   if (!q) return res.status(400).json({ error: "Falta la búsqueda" });
@@ -30,7 +30,7 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// Obtener URL temporal de audio directo para HTML5 (100% Nativo sin procesos bloqueados)
+// Ruta de Streaming por Proxy (Canaliza el audio a través de Render para evitar el Error 403)
 app.get("/stream", async (req, res) => {
   const id = req.query.id;
   if (!id) return res.status(400).json({ error: "Falta el id" });
@@ -38,26 +38,25 @@ app.get("/stream", async (req, res) => {
   try {
     const videoUrl = `https://youtube.com{id}`;
     
-    // Obtiene la información del video saltándose las restricciones de cifrado
-    const info = await ytdl.getInfo(videoUrl);
-    
-    // Filtra exactamente el formato de audio M4A (itag 140) que tu reproductor HTML5 lee nativamente
-    const format = ytdl.chooseFormat(info.formats, { quality: "140" });
+    // Configuramos las cabeceras HTTP para que el navegador sepa que es un archivo de audio M4A
+    res.setHeader("Content-Type", "audio/mp4");
+    res.setHeader("Transfer-Encoding", "chunked");
 
-    if (format && format.url) {
-      res.json({ url: format.url });
-    } else {
-      // Si por alguna razón no encuentra el 140, busca el audio de mayor calidad disponible compatible
-      const backupFormat = ytdl.filterFormats(info.formats, "audioonly")[0];
-      if (backupFormat) {
-        res.json({ url: backupFormat.url });
-      } else {
-        res.status(404).json({ error: "No se encontró un flujo de audio compatible" });
-      }
-    }
+    // Descargamos el audio en vivo desde Render y lo inyectamos de inmediato a la respuesta web (res)
+    ytdl(videoUrl, {
+      quality: "140", // Formato M4A nativo de 128kbps para HTML5
+      filter: "audioonly",
+      highWaterMark: 1024 * 1024 * 2 // Buffer de 2MB para evitar pausas
+    })
+    .on("error", (err) => {
+      console.error("Error en el stream de ytdl:", err);
+      if (!res.headersSent) res.status(500).send("Error en la transmisión");
+    })
+    .pipe(res); // El método pipe envía el flujo de datos directamente al reproductor HTML5
+
   } catch (err) {
-    console.error("Error en streaming:", err);
-    res.status(500).json({ error: "Error al obtener el audio" });
+    console.error("Error en el endpoint de streaming:", err);
+    if (!res.headersSent) res.status(500).json({ error: "Error al obtener el audio" });
   }
 });
 
